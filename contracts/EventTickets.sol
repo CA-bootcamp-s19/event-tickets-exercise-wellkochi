@@ -101,7 +101,7 @@ contract EventTickets {
     function buyTickets(uint tickets) public payable {
         require(myEvent.isOpen == true, "Event is not open");
         require(msg.value >= tickets * TICKET_PRICE, "Not enough paid");
-        require(tickets >= myEvent.totalTickets, "Not enough tickets");
+        require(tickets <= myEvent.totalTickets, "Not enough tickets");
 
         myEvent.totalTickets -= tickets;
         myEvent.sales += tickets;
@@ -120,14 +120,16 @@ contract EventTickets {
             - Transfer the appropriate amount to the refund requester.
             - Emit the appropriate event.
     */
-    function getRefund(uint tickets) public {
-        require(myEvent.buyers[msg.sender] >= tickets, "No tickets refundable");
-        myEvent.totalTickets += tickets;
-        myEvent.sales -= tickets;
-        myEvent.buyers[msg.sender] -= tickets;
-        address(msg.sender).transfer(tickets * TICKET_PRICE);
+    function getRefund() public {
+        uint buyerTickets = myEvent.buyers[msg.sender];
+        require(buyerTickets > 0, "No tickets refundable");
+        myEvent.totalTickets += buyerTickets;
+        myEvent.sales -= buyerTickets;
+        myEvent.buyers[msg.sender] -= buyerTickets;
+        uint refundAmount = buyerTickets * TICKET_PRICE;
+        address(msg.sender).transfer(refundAmount);
 
-        emit LogGetRefund(msg.sender, tickets);
+        emit LogGetRefund(msg.sender, buyerTickets);
     }
 
     /*
