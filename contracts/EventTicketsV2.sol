@@ -65,7 +65,16 @@ contract EventTicketsV2 {
     function addEvent(string memory description, string memory URL, uint tickets) public isOwner returns(uint) {
 
         uint id = idGenerator;
-        events[id] = Event({description: description, website: URL, totalTickets: tickets, sales: 0, isOpen: true});
+
+        // 2 ways to assign a new Struct. 1/2:
+        // events[id] = Event({description: description, website: URL, totalTickets: tickets, sales: 0, isOpen: true});
+        // 2/2:
+        events[id].description = description;
+        events[id].website = URL;
+        events[id].totalTickets = tickets;
+        events[id].sales = 0; 
+        events[id].isOpen = true;
+
         idGenerator++;
 
         emit LogEventAdded(description, URL, tickets, id);
