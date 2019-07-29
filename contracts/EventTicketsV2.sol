@@ -14,7 +14,7 @@ contract EventTicketsV2 {
     /*
         Create a variable to keep track of the event ID numbers.
     */
-    uint public idGenerator;
+    uint public idGenerator = 0;
     
     /*
         Define an Event struct, similar to the V1 of this contract.
@@ -63,14 +63,9 @@ contract EventTicketsV2 {
             - return the event's ID
     */
     function addEvent(string memory description, string memory URL, uint tickets) public isOwner returns(uint) {
-        Event memory newEvent;
-        newEvent.description = description;
-        newEvent.website = URL;
-        newEvent.totalTickets = tickets;
-        newEvent.isOpen = true;
 
         uint id = idGenerator;
-        events[id] = newEvent;
+        events[id] = Event({description: description, website: URL, totalTickets: tickets, sales: 0, isOpen: true});
         idGenerator++;
 
         emit LogEventAdded(description, URL, tickets, id);
@@ -110,7 +105,7 @@ contract EventTicketsV2 {
     function buyTickets(uint id, uint tickets) public payable {
         require(events[id].isOpen == true, "Event is not open");
         require(msg.value >= tickets * PRICE_TICKET, "Not enough paid");
-        require(tickets >= events[id].totalTickets, "Not enough tickets");
+        require(tickets <= events[id].totalTickets, "Not enough tickets");
 
         events[id].totalTickets -= tickets;
         events[id].sales += tickets;
@@ -130,12 +125,14 @@ contract EventTicketsV2 {
             - send appropriate value to the refund requester
             - emit the appropriate event
     */
-    function getRefund(uint id, uint tickets) public {
-        require(events[id].buyers[msg.sender] >= tickets, "No tickets refundable");
-        events[id].totalTickets += tickets;
+    function getRefund(uint id) public {
+        uint tickets = events[id].buyers[msg.sender];
+        require(tickets > 0, "No tickets refundable");
         events[id].sales -= tickets;
-        events[id].buyers[msg.sender] -= tickets;
-        address(msg.sender).transfer(tickets * PRICE_TICKET);
+        events[id].totalTickets += tickets;
+        uint refundAmount = tickets * PRICE_TICKET;
+
+        address(msg.sender).transfer(refundAmount);
 
         emit LogGetRefund(msg.sender, id, tickets);
     }
@@ -145,7 +142,7 @@ contract EventTicketsV2 {
         This function takes one parameter, an event ID
         This function returns a uint, the number of tickets that the msg.sender has purchased.
     */
-    function getBuyerNumberTickets(uint id) public returns(uint) {
+    function getBuyerNumberTickets(uint id) public view returns(uint) {
         return events[id].buyers[msg.sender];
     }
 
